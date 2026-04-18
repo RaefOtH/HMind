@@ -17,8 +17,8 @@ npm run build:win
 ```
 
 Output in `dist/`:
-- `Smart Text Organizer Setup.exe` — NSIS installer
-- `Smart Text Organizer.exe`       — portable single-file exe
+- `HMind Setup.exe` — NSIS installer
+- `HMind.exe`       — portable single-file exe
 
 ## Data location
 One JSON file per theme, stored at:

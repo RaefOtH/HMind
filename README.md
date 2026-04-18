@@ -12,7 +12,6 @@ npm start
 ```
 
 ## Build Windows installer
-Place a 256×256 `icon.ico` in `assets/icon.ico`, then:
 ```bash
 npm run build:win
 ```

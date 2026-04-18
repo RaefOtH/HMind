@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HMind</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #f5f5f3;
+      --surface:   #ffffff;
+      --border:    rgba(0,0,0,0.09);
+      --border-md: rgba(0,0,0,0.17);
+      --text:      #1a1a1a;
+      --text-2:    #6b6b6b;
+      --text-3:    #aaa;
+      --accent:    #378ADD;
+      --danger:    #E24B4A;
+      --radius:    8px;
+      --radius-lg: 12px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      font-size: 14px;
+    }
+
+    .app { display: flex; height: 100vh; }
+
+    /* ── Sidebar ─────────────────────────────────────────── */
+    .sidebar {
+      width: 215px; min-width: 215px;
+      background: var(--surface);
+      border-right: 0.5px solid var(--border);
+      display: flex; flex-direction: column;
+    }
+
+    .sidebar-header {
+      padding: 14px 16px 10px;
+      border-bottom: 0.5px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .sidebar-title {
+      font-size: 11px; font-weight: 600; color: var(--text-2);
+      text-transform: uppercase; letter-spacing: 0.07em;
+    }
+    .folder-btn {
+      font-size: 11px; color: var(--text-3);
+      background: none; border: none; cursor: pointer;
+      padding: 2px 6px; border-radius: 4px;
+    }
+    .folder-btn:hover { color: var(--text-2); background: var(--bg); }
+
+    .file-list { flex: 1; overflow-y: auto; padding: 6px 0; }
+
+    .file-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 16px; cursor: pointer;
+      font-size: 13px; color: var(--text-2); user-select: none;
+      transition: background 0.1s;
+    }
+    .file-item:hover  { background: var(--bg); }
+    .file-item.active { background: var(--bg); color: var(--text); font-weight: 500; }
+
+    .file-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .file-label {
+      flex: 1; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+    .file-count {
+      font-size: 11px; background: var(--bg); color: var(--text-3);
+      padding: 1px 6px; border-radius: 10px; flex-shrink: 0;
+    }
+    .file-item.active .file-count {
+      background: rgba(0,0,0,0.06);
+    }
+
+    /* ── Main ────────────────────────────────────────────── */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    .top-bar {
+      background: var(--surface);
+      border-bottom: 0.5px solid var(--border);
+      padding: 13px 20px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .app-title { font-size: 14px; font-weight: 600; }
+    .total-badge {
+      margin-left: auto; font-size: 12px; color: var(--text-3);
+    }
+
+    /* ── Input area ──────────────────────────────────────── */
+    .input-area {
+      background: var(--surface);
+      border-bottom: 0.5px solid var(--border);
+      padding: 16px 20px;
+    }
+
+    textarea {
+      width: 100%; resize: none;
+      min-height: 88px; max-height: 220px;
+      padding: 10px 12px; font-size: 14px; font-family: inherit;
+      border: 0.5px solid var(--border-md); border-radius: var(--radius);
+      background: var(--bg); color: var(--text); line-height: 1.6;
+    }
+    textarea:focus { outline: none; border-color: var(--accent); }
+    textarea::placeholder { color: var(--text-3); }
+
+    .theme-row {
+      display: flex; align-items: center; gap: 9px; margin-top: 10px;
+    }
+    .theme-row-label {
+      font-size: 12px; font-weight: 500; color: var(--text-2);
+      white-space: nowrap;
+    }
+    .theme-input {
+      flex: 1; font-size: 13px; padding: 7px 11px;
+      border: 0.5px solid var(--border-md); border-radius: var(--radius);
+      background: var(--bg); color: var(--text);
+    }
+    .theme-input:focus { outline: none; border-color: var(--accent); }
+    .theme-input::placeholder { color: var(--text-3); }
+
+    .save-btn {
+      padding: 0 18px; height: 36px;
+      font-size: 13px; font-weight: 500;
+      border: 0.5px solid var(--border-md); border-radius: var(--radius);
+      background: var(--surface); color: var(--text);
+      cursor: pointer; white-space: nowrap;
+      transition: background 0.1s;
+    }
+    .save-btn:hover  { background: var(--bg); }
+    .save-btn:active { opacity: 0.65; }
+
+    .hint { font-size: 11px; color: var(--text-3); margin-top: 7px; }
+
+    /* ── Content ─────────────────────────────────────────── */
+    .content { flex: 1; overflow-y: auto; padding: 20px; }
+
+    .empty-state {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      height: 100%; gap: 10px; color: var(--text-3);
+    }
+    .empty-icon { font-size: 38px; opacity: 0.28; }
+    .empty-text { font-size: 14px; }
+
+    .view-header {
+      font-size: 12px; color: var(--text-2);
+      font-weight: 500; margin-bottom: 16px;
+    }
+    .section-title {
+      font-size: 11px; font-weight: 600; color: var(--text-2);
+      text-transform: uppercase; letter-spacing: 0.06em;
+      display: flex; align-items: center; gap: 8px;
+      margin: 18px 0 9px;
+    }
+    .section-title:first-of-type { margin-top: 0; }
+    .section-line { flex: 1; height: 0.5px; background: var(--border); }
+
+    .entry-card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 13px 15px; margin-bottom: 9px;
+    }
+    .entry-meta {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 9px;
+    }
+    .theme-badge {
+      font-size: 11px; font-weight: 600;
+      padding: 3px 9px; border-radius: 10px;
+    }
+    .entry-time { font-size: 11px; color: var(--text-3); margin-left: auto; }
+    .del-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-3); font-size: 12px;
+      padding: 2px 6px; border-radius: 4px;
+    }
+    .del-btn:hover { color: var(--danger); background: #FCEBEB; }
+    .entry-text {
+      font-size: 14px; color: var(--text);
+      line-height: 1.65; white-space: pre-wrap; word-break: break-word;
+    }
+
+    /* ── Toast ───────────────────────────────────────────── */
+    .toast {
+      position: fixed; bottom: 18px; right: 18px;
+      background: var(--surface); border: 0.5px solid var(--border-md);
+      border-radius: var(--radius); padding: 9px 15px;
+      font-size: 13px; color: var(--text);
+      display: flex; align-items: center; gap: 8px;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.18s; z-index: 999;
+    }
+    .toast.show { opacity: 1; }
+    .toast-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+    
+    .print-btn {
+      margin-left: 12px; padding: 0 13px; height: 30px;
+      font-size: 12px; border: 0.5px solid var(--border-md);
+       border-radius: var(--radius); background: var(--surface);
+      color: var(--text); cursor: pointer;
+    }
+   .print-btn:hover { background: var(--bg); }
+
+    .modal-backdrop {
+     display: none; position: fixed; inset: 0;
+     background: rgba(0,0,0,0.35); z-index: 100;
+   }
+    .modal {
+     display: none; position: fixed;
+     top: 50%; left: 50%; transform: translate(-50%, -50%);
+     background: var(--surface); border-radius: var(--radius-lg);
+      border: 0.5px solid var(--border-md);
+     padding: 24px; width: 460px; max-height: 80vh;
+      flex-direction: column; gap: 6px; z-index: 101;
+   }
+   .modal-title { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+    .modal-label { font-size: 12px; font-weight: 500; color: var(--text-2); }
+    .modal select { width: 100%; padding: 7px 10px; font-size: 13px;
+     border: 0.5px solid var(--border-md); border-radius: var(--radius);
+      background: var(--bg); color: var(--text); }
+   .modal-check-all { font-size: 12px; display: flex;
+      align-items: center; gap: 6px; color: var(--text-2); }
+   .modal-entries { flex: 1; overflow-y: auto; max-height: 300px;
+      border: 0.5px solid var(--border); border-radius: var(--radius);
+      padding: 6px 8px; display: flex; flex-direction: column; gap: 4px; }
+    .modal-entry-row { display: flex; align-items: flex-start; gap: 8px;
+     padding: 6px 4px; cursor: pointer; font-size: 13px; }
+   .modal-entry-row:hover { background: var(--bg); border-radius: 6px; }
+    .modal-entry-theme { font-weight: 600; font-size: 11px;
+     margin-right: 6px; color: var(--accent); }
+    .modal-entry-time  { font-size: 11px; color: var(--text-3); margin-right: 6px; }
+    .modal-entry-preview { color: var(--text-2); }
+    .modal-actions { display: flex; justify-content: flex-end;
+      gap: 8px; margin-top: 10px; }
+    .modal-actions button { padding: 7px 16px; font-size: 13px;
+     border: 0.5px solid var(--border-md); border-radius: var(--radius);
+      background: var(--surface); color: var(--text); cursor: pointer; }
+   .modal-actions button:hover { background: var(--bg); }
+   .modal-print-btn { background: var(--accent) !important;
+      color: #fff !important; border-color: var(--accent) !important; }
+   .modal-print-btn:hover { opacity: 0.88; }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ── Sidebar ── -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-title">Themes</span>
+      <button class="folder-btn" onclick="window.electronAPI.openDataFolder()" title="Open data folder">📂 Open</button>
+    </div>
+
+    <div class="file-list" id="fileList">
+      <div class="file-item active" data-theme="all" onclick="selectTheme('all', this)">
+        <span style="font-size:14px">📂</span>
+        <span class="file-label">All entries</span>
+        <span class="file-count" id="count-all">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Main ── -->
+  <div class="main">
+    <div class="top-bar">
+      <span class="app-title">HMind</span>
+      <span class="total-badge" id="totalBadge"></span>
+      <button class="print-btn" onclick="openPrintModal()">🖨 Print</button>
+    </div>
+
+    <div class="input-area">
+      <textarea
+        id="textInput"
+        placeholder="Write your text here…"
+      ></textarea>
+
+      <div class="theme-row">
+        <span class="theme-row-label">Theme</span>
+        <input
+          type="text"
+          id="themeInput"
+          class="theme-input"
+          placeholder="e.g. Work, Travel, Ideas, Health…"
+        />
+        <button class="save-btn" onclick="handleSave()">Save</button>
+      </div>
+
+      <div class="hint">Enter a theme name and click Save — or press Ctrl+Enter</div>
+    </div>
+
+    <div class="content">
+      <div class="empty-state" id="emptyState">
+        <span class="empty-icon">📝</span>
+        <span class="empty-text">No entries yet. Write something above.</span>
+      </div>
+      <div id="entriesContainer" style="display:none"></div>
+    </div>
+  </div>
+    <div class="modal-backdrop" id="modalBackdrop" onclick="closePrintModal()"></div>
+  <div class="modal" id="printModal">
+     <div class="modal-title">Print to PDF</div>
+
+    <!-- Step 1: pick theme -->
+    <label class="modal-label">Theme</label>
+    <select id="printThemeSelect">
+     <option value="all">All themes</option>
+      <!-- populated dynamically -->
+   </select>
+
+    <!-- Step 2: pick entries (checkboxes, sorted by date) -->
+   <label class="modal-label" style="margin-top:12px">Select notes</label>
+   <div class="modal-check-all">
+      <input type="checkbox" id="checkAll" onchange="toggleAllChecks(this.checked)" checked />
+      <label for="checkAll">Select all</label>
+    </div>
+    <div class="modal-entries" id="modalEntries"></div>
+
+   <div class="modal-actions">
+     <button onclick="closePrintModal()">Cancel</button>
+      <button class="modal-print-btn" onclick="handlePrint()">Save as PDF</button>
+    </div>
+  </div>
+  
+
+</div>
+
+<div class="toast" id="toast">
+  <div class="toast-dot" id="toastDot"></div>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+const api = window.electronAPI
+let entries = []
+let currentTheme = 'all'
+
+// ── Color: derive hue deterministically from theme name ──────
+function themeColor(theme) {
+  let hash = 0
+  for (let i = 0; i < theme.length; i++) {
+    hash = theme.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  const hue = Math.abs(hash) % 360
+  return {
+    bg:   `hsl(${hue}, 65%, 91%)`,
+    text: `hsl(${hue}, 55%, 30%)`,
+    dot:  `hsl(${hue}, 60%, 55%)`
+  }
+}
+
+// ── Init ─────────────────────────────────────────────────────
+async function init() {
+  entries = await api.loadAllEntries()
+  renderAll()
+}
+
+// ── Save ─────────────────────────────────────────────────────
+async function handleSave() {
+  const text  = document.getElementById('textInput').value.trim()
+  const theme = document.getElementById('themeInput').value.trim()
+    .toLowerCase()
+    .replace(/\b\w/g, c => c.toUpperCase())
+
+  if (!text)  { toast('Write some text first.', false); return }
+  if (!theme) { toast('Enter a theme name.', false); return }
+
+  const timestamp = new Date().toLocaleString('en-GB', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  })
+
+  const entry = await api.saveEntry({ text, theme, timestamp })
+  entries.unshift(entry)
+  document.getElementById('textInput').value  = ''
+  document.getElementById('themeInput').value = ''
+  renderAll()
+  toast(`Saved to "${theme}"`, true)
+}
+
+// ── Delete ───────────────────────────────────────────────────
+async function deleteEntry(id, theme) {
+  await api.deleteEntry({ id, theme })
+  entries = entries.filter(e => e.id !== id)
+  // If we're viewing a theme that now has no entries, go back to all
+  const stillExists = entries.some(e => e.theme === theme)
+  if (!stillExists && currentTheme === theme) {
+    currentTheme = 'all'
+  }
+  renderAll()
+}
+
+// ── Theme selection ──────────────────────────────────────────
+function selectTheme(theme, el) {
+  currentTheme = theme
+  document.querySelectorAll('.file-item').forEach(i => i.classList.remove('active'))
+  el.classList.add('active')
+  renderEntries()
+}
+
+// ── Render all ───────────────────────────────────────────────
+function renderAll() {
+  renderSidebar()
+  renderEntries()
+  const total = entries.length
+  document.getElementById('totalBadge').textContent =
+    total ? `${total} ${total === 1 ? 'entry' : 'entries'}` : ''
+  document.getElementById('count-all').textContent = total
+}
+
+// ── Sidebar — sorted by entry count descending ───────────────
+function renderSidebar() {
+  const themes = [...new Set(entries.map(e => e.theme))]
+    .sort((a, b) => {
+      const ca = entries.filter(e => e.theme === a).length
+      const cb = entries.filter(e => e.theme === b).length
+      return cb - ca
+    })
+
+  const list = document.getElementById('fileList')
+  list.querySelectorAll('.file-item:not([data-theme="all"])').forEach(el => el.remove())
+
+  themes.forEach(theme => {
+    const count = entries.filter(e => e.theme === theme).length
+    const c     = themeColor(theme)
+    const div   = document.createElement('div')
+    div.className   = 'file-item' + (currentTheme === theme ? ' active' : '')
+    div.dataset.theme = theme
+    div.onclick     = function() { selectTheme(theme, this) }
+    div.innerHTML   = `
+      <span class="file-dot" style="background:${c.dot}"></span>
+      <span class="file-label">${theme}</span>
+      <span class="file-count">${count}</span>
+    `
+    list.appendChild(div)
+  })
+}
+
+// ── Entries view ─────────────────────────────────────────────
+function renderEntries() {
+  const container = document.getElementById('entriesContainer')
+  const empty     = document.getElementById('emptyState')
+  const filtered  = currentTheme === 'all'
+    ? entries
+    : entries.filter(e => e.theme === currentTheme)
+
+  if (!filtered.length) {
+    container.style.display = 'none'
+    empty.style.display     = 'flex'
+    empty.querySelector('.empty-text').textContent =
+      currentTheme === 'all'
+        ? 'No entries yet. Write something above.'
+        : `No entries in "${currentTheme}" yet.`
+    return
+  }
+
+  empty.style.display     = 'none'
+  container.style.display = 'block'
+
+  if (currentTheme === 'all') {
+    // Group by theme, themes sorted by count
+    const themes = [...new Set(filtered.map(e => e.theme))]
+      .sort((a, b) => {
+        const ca = filtered.filter(e => e.theme === a).length
+        const cb = filtered.filter(e => e.theme === b).length
+        return cb - ca
+      })
+
+    let html = `<div class="view-header">
+      ${filtered.length} ${filtered.length === 1 ? 'entry' : 'entries'}
+      across ${themes.length} ${themes.length === 1 ? 'theme' : 'themes'}
+    </div>`
+
+    themes.forEach(t => {
+      html += `<div class="section-title"><span>${t}</span><span class="section-line"></span></div>`
+      filtered.filter(e => e.theme === t).forEach(e => { html += buildCard(e) })
+    })
+
+    container.innerHTML = html
+  } else {
+    container.innerHTML = filtered.map(buildCard).join('')
+  }
+}
+
+// ── Card ─────────────────────────────────────────────────────
+function buildCard(e) {
+  const c      = themeColor(e.theme)
+  const safeT  = e.theme.replace(/'/g, "\\'")
+  return `<div class="entry-card">
+    <div class="entry-meta">
+      <span class="theme-badge" style="background:${c.bg};color:${c.text}">${e.theme}</span>
+      <span class="entry-time">${e.timestamp}</span>
+      <button class="del-btn" onclick="deleteEntry(${e.id},'${safeT}')">✕</button>
+    </div>
+    <div class="entry-text">${e.text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+  </div>`
+}
+
+// ── Toast ─────────────────────────────────────────────────────
+function toast(msg, ok) {
+  const t = document.getElementById('toast')
+  document.getElementById('toastDot').style.background = ok ? '#1D9E75' : '#E24B4A'
+  document.getElementById('toastMsg').textContent = msg
+  t.classList.add('show')
+  setTimeout(() => t.classList.remove('show'), 3000)
+}
+
+// ── Keyboard shortcut ─────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.ctrlKey) handleSave()
+})
+
+function openPrintModal() {
+  // Populate theme dropdown
+  const themes = [...new Set(entries.map(e => e.theme))]
+  const sel = document.getElementById('printThemeSelect')
+  sel.innerHTML = '<option value="all">All themes</option>' +
+    themes.map(t => `<option value="${t}">${t}</option>`).join('')
+  sel.onchange = refreshModalEntries
+  refreshModalEntries()
+  document.getElementById('modalBackdrop').style.display = 'block'
+  document.getElementById('printModal').style.display    = 'flex'
+}
+
+function closePrintModal() {
+  document.getElementById('modalBackdrop').style.display = 'none'
+  document.getElementById('printModal').style.display    = 'none'
+}
+
+function refreshModalEntries() {
+  const theme    = document.getElementById('printThemeSelect').value
+  const filtered = (theme === 'all' ? entries : entries.filter(e => e.theme === theme))
+    .slice()
+    .sort((a, b) => a.id - b.id)  // oldest first for print
+
+  document.getElementById('modalEntries').innerHTML = filtered.map(e =>
+    `<label class="modal-entry-row">
+       <input type="checkbox" class="entry-check" data-id="${e.id}" checked />
+       <span>
+         <span class="modal-entry-theme">${e.theme}</span>
+         <span class="modal-entry-time">${e.timestamp}</span>
+         <span class="modal-entry-preview">${e.text.slice(0, 60)}${e.text.length > 60 ? '…' : ''}</span>
+       </span>
+     </label>`
+  ).join('')
+
+  document.getElementById('checkAll').checked = true
+}
+
+function toggleAllChecks(checked) {
+  document.querySelectorAll('.entry-check').forEach(c => c.checked = checked)
+}
+
+async function handlePrint() {
+  const checkedIds = new Set(
+    [...document.querySelectorAll('.entry-check:checked')].map(c => +c.dataset.id)
+  )
+  if (!checkedIds.size) { toast('Select at least one note.', false); return }
+
+  const theme    = document.getElementById('printThemeSelect').value
+  const selected = entries
+    .filter(e => checkedIds.has(e.id))
+    .sort((a, b) => a.id - b.id)  // sorted by date ascending
+
+  // Build clean HTML for the PDF
+  const html = `
+    <html><head><style>
+      body { font-family: Georgia, serif; padding: 40px; color: #1a1a1a; }
+      h1   { font-size: 20px; margin-bottom: 4px; }
+      .sub { font-size: 13px; color: #888; margin-bottom: 32px; }
+      .card { border: 1px solid #e0e0e0; border-radius: 8px;
+              padding: 16px 20px; margin-bottom: 18px; page-break-inside: avoid; }
+      .meta { display: flex; gap: 12px; margin-bottom: 10px;
+              font-size: 12px; color: #666; }
+      .badge { padding: 2px 8px; border-radius: 10px;
+               background: #eee; font-weight: 600; }
+      .text { font-size: 14px; line-height: 1.7; white-space: pre-wrap; }
+    </style></head><body>
+      <h1>HMind</h1>
+      <div class="sub">Theme: ${theme === 'all' ? 'All' : theme} · ${selected.length} notes · Exported ${new Date().toLocaleDateString()}</div>
+      ${selected.map(e => `
+        <div class="card">
+          <div class="meta">
+            <span class="badge">${e.theme}</span>
+            <span>${e.timestamp}</span>
+          </div>
+          <div class="text">${e.text.replace(/</g,'&lt;')}</div>
+        </div>`).join('')}
+    </body></html>`
+
+  const filename = `notes-${theme === 'all' ? 'all' : theme}-${Date.now()}.pdf`
+  const savedPath = await api.printToPdf({ html, filename })
+  closePrintModal()
+  toast(`PDF saved to Documents`, true)
+}
+
+init()
+</script>
+</body>
+</html>

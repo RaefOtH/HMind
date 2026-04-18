@@ -1,4 +1,4 @@
-# Smart Text Organizer
+# HMind: Text Organizer
 
 Write texts, assign them a theme, and they get saved automatically — one file per theme. No AI, no internet needed.
 
